@@ -1,5 +1,5 @@
 name: Laptop Power
-version: 0.1.0
+version: 0.1.1
 slug: laptop_power
 description: >-
   Battery sensors and power outage alerts for Home Assistant OS on a laptop, with a clean shutdown and an

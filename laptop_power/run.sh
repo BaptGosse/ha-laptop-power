@@ -3,6 +3,7 @@
 # Laptop Power: battery sensors and power outage events for Home Assistant OS running on a laptop.
 # During a long outage it shuts down cleanly before the battery is empty and schedules an RTC wake-up,
 # so the laptop starts again by itself once power is back.
+# bashio runs with errexit and nounset: every read or call that may fail must not stop the loop.
 
 LEVEL=$(bashio::config 'shutdown_battery_level')
 WAKE_MINUTES=$(bashio::config 'wake_interval')
@@ -42,13 +43,13 @@ BAT=$(find_supply Battery)
 if [ -z "$BAT" ]; then
   bashio::exit.nok "No laptop battery found in ${POWER_SUPPLY_DIR}: nothing to monitor."
 fi
-val() { cat "$BAT/$1" 2>/dev/null; }
+val() { cat "$BAT/$1" 2>/dev/null || true; }
 
 read_state() {
   capacity=$(val capacity)
   status=$(val status)
   if [ -n "$AC" ]; then
-    on_mains=$(cat "$AC/online" 2>/dev/null)
+    on_mains=$(cat "$AC/online" 2>/dev/null || true)
   elif [ "$status" = Discharging ]; then
     on_mains=0
   else
@@ -74,13 +75,14 @@ read_state() {
   cycles=$(val cycle_count)
 }
 
+# Home Assistant may not be up yet (the app starts before it at boot): a failed call is retried at the next poll
 post_state() {  # entity_id, state, attributes (JSON)
   curl -fsS -m 10 -X POST -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" -H "Content-Type: application/json" \
-    -d "$(jq -nc --arg s "$2" --argjson a "$3" '{state: $s, attributes: $a}')" "$CORE/states/$1" >/dev/null 2>&1
+    -d "$(jq -nc --arg s "$2" --argjson a "$3" '{state: $s, attributes: $a}')" "$CORE/states/$1" >/dev/null 2>&1 || true
 }
 fire_event() {  # event_type, data (JSON)
   curl -fsS -m 10 -X POST -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" -H "Content-Type: application/json" \
-    -d "$2" "$CORE/events/$1" >/dev/null 2>&1
+    -d "$2" "$CORE/events/$1" >/dev/null 2>&1 || true
 }
 attrs() {  # key, unit, device_class, state_class, icon
   jq -nc --arg n "$(name "$1")" --arg u "$2" --arg dc "$3" --arg sc "$4" --arg i "$5" \
@@ -117,7 +119,7 @@ shutdown_with_wake() {
   fire_event laptop_power_shutdown "$(jq -nc --argjson l "$capacity" --arg w "$wake_at" --argjson s "$scheduled" \
     '{battery_level: $l, wake_at: $w, wake_scheduled: $s, dry_run: false}')"
   sleep 15  # lets Home Assistant send its notification
-  bashio::host.shutdown
+  bashio::host.shutdown || bashio::log.error "The Supervisor refused the shutdown"
   sleep infinity
 }
 
@@ -125,7 +127,7 @@ read_state
 bashio::log.info "Battery: ${BAT##*/}, mains adapter: ${AC##*/}. Health ${health}%, ${cycles:-?} cycles."
 bashio::log.info "Shutdown at ${LEVEL}% during an outage, wake-up every ${WAKE_MINUTES} min, dry run: ${DRY_RUN}."
 if [ "$on_mains" = 1 ] && ! bashio::var.true "$DRY_RUN"; then
-  rtcwake -d rtc0 -m disable >/dev/null 2>&1  # power is back: drop any wake-up left from an outage
+  rtcwake -d rtc0 -m disable >/dev/null 2>&1 || true  # power is back: drop any wake-up left from an outage
 fi
 
 started=$(date +%s)
