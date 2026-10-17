@@ -1,0 +1,18 @@
+configuration:
+  shutdown_battery_level:
+    name: Shutdown battery level
+    description: During a power outage, shut down cleanly when the battery reaches this level (%).
+  wake_interval:
+    name: Wake-up interval
+    description: >-
+      Minutes after that shutdown before the laptop starts again by itself. If power is still out, it shuts
+      down again and tries later.
+  poll_interval:
+    name: Polling interval
+    description: Seconds between two battery readings.
+  language:
+    name: Sensor language
+    description: Language of the sensor names (en or fr).
+  dry_run:
+    name: Dry run
+    description: Only log and send the event, without scheduling a wake-up or shutting down. For testing.

@@ -1,0 +1,29 @@
+name: Laptop Power
+version: 0.1.0
+slug: laptop_power
+description: >-
+  Battery sensors and power outage alerts for Home Assistant OS on a laptop, with a clean shutdown and an
+  automatic restart after a long outage
+url: https://github.com/BaptGosse/ha-laptop-power
+arch:
+  - amd64
+init: false
+startup: services
+boot: auto
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+devices:
+  - /dev/rtc0
+options:
+  shutdown_battery_level: 15
+  wake_interval: 30
+  poll_interval: 30
+  language: en
+  dry_run: false
+schema:
+  shutdown_battery_level: int(5,95)
+  wake_interval: int(5,720)
+  poll_interval: int(10,300)
+  language: list(en|fr)
+  dry_run: bool

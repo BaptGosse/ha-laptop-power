@@ -1,0 +1,18 @@
+configuration:
+  shutdown_battery_level:
+    name: Niveau d'arrêt de la batterie
+    description: Pendant une coupure de courant, arrêt propre quand la batterie atteint ce niveau (%).
+  wake_interval:
+    name: Intervalle de réveil
+    description: >-
+      Minutes après cet arrêt avant que le portable redémarre tout seul. Si le courant n'est pas revenu, il
+      s'arrête de nouveau et réessaie plus tard.
+  poll_interval:
+    name: Intervalle de lecture
+    description: Secondes entre deux lectures de la batterie.
+  language:
+    name: Langue des capteurs
+    description: Langue des noms des capteurs (en ou fr).
+  dry_run:
+    name: Mode essai
+    description: Journalise et envoie l'événement seulement, sans programmer de réveil ni arrêter. Pour tester.
